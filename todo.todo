@@ -1,0 +1,12 @@
+0.1:
+   ✔ Sound system @done (15-04-13 18:06)
+   ✔ Font loading @done (15-04-12 19:45)
+   ✔ Labels @done (15-04-12 19:46)
+   ☐ Physics
+   ✔ Keyboard events @done (15-04-13 01:07)
+   ☐ Get active mouse and keyboard state
+   ☐ Change to using interface types to detect what systems a component belongs to
+     
+0.2:
+   ✔ Entities can hold other entities @done (15-04-13 02:41)
+   ☐ Animated sprites
