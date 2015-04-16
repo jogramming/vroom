@@ -107,6 +107,7 @@ func (e *Engine) Stop() {
 	e.running = false
 }
 
+// We do not add children of the entity were adding, maybe we should? nah...
 func (e *Engine) AddEntity(entity Entity) {
 	entity.SetEngine(e)
 	e.CurrentScene.AddEntity(entity)
@@ -124,23 +125,6 @@ func (e *Engine) AddEntity(entity Entity) {
 			}
 		}
 	}
-
-	// for name, compSlice := range entity.GetComponents() {
-	// 	for _, system := range e.Systems {
-	// 		for _, sysName := range system.GetListenComponents() {
-	// 			if name == sysName {
-	// 				for _, comp := range compSlice {
-	// 					if !comp.InitCalled() {
-	// 						comp.SetInitCalled()
-	// 						comp.Init()
-	// 					}
-	// 					system.AddComponent(comp)
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
-
 	entity.Start()
 }
 
@@ -187,4 +171,8 @@ func (e *Engine) Destroy() {
 	mix.CloseAudio()
 
 	sdl.Quit()
+}
+
+func (e *Engine) GetKey(key sdl.Keycode) bool {
+	return e.Keyboardsystem.Keys[key]
 }
