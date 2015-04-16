@@ -135,6 +135,8 @@ func (sb *SimpleButton) Init() {
 		ClickSprite: cs,
 		Width:       sb.W,
 		Height:      sb.H,
+		ClickSound:  "click",
+		HoverSound:  "hover",
 		OnClick: func() {
 			fmt.Println("Magic button pressed! Such press!")
 		},
