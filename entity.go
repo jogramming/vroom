@@ -1,5 +1,9 @@
 package vroom
 
+import (
+	"github.com/vova616/chipmunk/vect"
+)
+
 type Entity interface {
 	Init()  // Called when the entity is supposed to be initialized
 	Start() // Called when the entity is added to the currently active scene
@@ -25,6 +29,7 @@ type Entity interface {
 
 	AddChild(e Entity, addToScene bool)
 	RemoveChild(e Entity, removeFromScene bool)
+	GetChildren(recursive bool) []Entity
 
 	Destroy()
 }
@@ -145,11 +150,27 @@ func (be *BaseEntity) RemoveChild(e Entity, removeFromScene bool) {
 			be.Entities = append(be.Entities[:index], be.Entities[index+1:]...)
 		}
 	}
+
 	if removeFromScene {
 		be.GetEngine().RemoveEntity(e)
 	}
 
 	e.SetParent(nil)
+}
+
+func (be *BaseEntity) GetChildren(recursive bool) []Entity {
+	entities := make([]Entity, 0)
+	entities = append(entities, be.Entities...)
+
+	if recursive {
+		for _, ent := range entities {
+			children := ent.GetChildren(true)
+			if len(children) > 0 {
+				entities = append(entities, children...)
+			}
+		}
+	}
+	return entities
 }
 
 // Destroy this entity and brutally murder all it's children
@@ -162,4 +183,11 @@ func (be *BaseEntity) Destroy() {
 			comp.Destroy()
 		}
 	}
+}
+
+// Not actually empty contains a transform
+func NewEntity(x, y int) Entity {
+	ent := &BaseEntity{}
+	ent.AddComponent(NewTransform(vect.Float(x), vect.Float(y), 0))
+	return ent
 }

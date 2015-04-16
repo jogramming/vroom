@@ -23,14 +23,14 @@ type Component interface {
 	SetInitCalled()
 	Init()
 
-	Enable()
-	Disable()
+	SetEnabled(bool)
+	Enabled() bool
 	Destroy()
 }
 
 type BaseComponent struct {
 	Components map[string][]Component
-	Enabled    bool
+	IsDisabled bool
 	Parent     Entity
 	IsInit     bool
 }
@@ -69,12 +69,12 @@ func (bc *BaseComponent) GetParent() Entity {
 	return bc.Parent
 }
 
-func (bc *BaseComponent) Enable() {
-	bc.Enabled = true
+func (bc *BaseComponent) SetEnabled(enabled bool) {
+	bc.IsDisabled = !enabled
 }
 
-func (bc *BaseComponent) Disable() {
-	bc.Enabled = false
+func (bc *BaseComponent) Enabled() bool {
+	return !bc.IsDisabled
 }
 
 func (bc *BaseComponent) SetParent(ent Entity) {
@@ -86,12 +86,18 @@ func (bc *BaseComponent) Destroy() {
 }
 
 // Core components
-
 type Transform struct {
 	BaseComponent
 	Position vect.Vect
 	Angle    vect.Float
 	Scale    float32
+}
+
+func NewTransform(x, y, angle vect.Float) *Transform {
+	return &Transform{
+		Position: vect.Vect{x, y},
+		Angle:    angle,
+	}
 }
 
 func (t *Transform) Name() string {
@@ -152,23 +158,52 @@ func (t *Transform) CalcAngle() vect.Float {
 	return t.Angle
 }
 
+type UpdateAble interface {
+	Component
+	Update(dt float64)
+}
+
+// So you can add callbacks direcly to the entity (dont do this)
 type UpdateComp struct {
-	BaseComponent
-	Update func(dt float64)
+	Component
+	OnUpdate func(dt float64)
 }
 
 func (upd *UpdateComp) Name() string {
 	return "UpdateComp"
 }
 
+func (upd *UpdateComp) update(dt float64) {
+	if upd.OnUpdate != nil {
+		upd.OnUpdate(dt)
+	}
+}
+
+type DrawAble interface {
+	Component
+	Draw(renderer *sdl.Renderer)
+	GetLayer() int
+}
+
+// So you can add callbacks direcly to the entity (dont do this)
 type DrawComp struct {
 	BaseComponent
-	Draw  func(renderer *sdl.Renderer)
-	Layer int
+	OnDraw func(renderer *sdl.Renderer)
+	Layer  int
 }
 
 func (drw *DrawComp) Name() string {
 	return "DrawComp"
+}
+
+func (drw *DrawComp) Draw(renderer *sdl.Renderer) {
+	if drw.OnDraw != nil {
+		drw.OnDraw(renderer)
+	}
+}
+
+func (drw *DrawComp) GetLayer() int {
+	return drw.GetLayer()
 }
 
 type MouseBox struct { // If the mouse is inside this events will be sent
@@ -182,34 +217,44 @@ func (mb *MouseBox) Name() string {
 	return "MouseBox"
 }
 
-// Mouse Click and mouse hover
-// If the parent entity has a MouseBox component too it will
-// Only call the callbacks if the mouse is inside that
-type MouseClickComp struct {
-	BaseComponent
-	MouseDown func(x, y int, button int)
-	MouseUp   func(x, y int, button int)
+// Mouse click listener
+// If entity also has mbox component will only send clicks inside said mbox
+type MouseClickListener interface {
+	Component
+	MouseDown(x, y, button int)
+	MouseUp(x, y, button int)
 }
 
-func (mc *MouseClickComp) Name() string {
-	return "MouseClickComp"
+// Move is called when moving isnide mbox
+type MouseHoverListener interface {
+	Component
+	MouseMove(x, y int)
+	MouseEnter() // Called whenever the mouse enters the mbox
+	MouseLeave() // When leaving
 }
 
-type MouseHoverComp struct {
-	BaseComponent
-	MouseEnter func()
-	MouseLeave func()
-	MouseMove  func(x, y int)
-}
-
-func (mh *MouseHoverComp) Name() string {
-	return "MouseHoverComp"
+type KeyboardListener interface {
+	Component
+	KeyDown(sdl.Keycode)
+	KeyUp(sdl.Keycode)
 }
 
 type KeyboardComp struct {
 	BaseComponent
-	KeyDown func(sdl.Keycode)
-	KeyUp   func(sdl.Keycode)
+	OnKeyDown func(sdl.Keycode)
+	OnKeyUp   func(sdl.Keycode)
+}
+
+func (kb *KeyboardComp) KeyDown(code sdl.Keycode) {
+	if kb.OnKeyDown != nil {
+		kb.OnKeyDown(code)
+	}
+}
+
+func (kb *KeyboardComp) KeyUp(code sdl.Keycode) {
+	if kb.OnKeyUp != nil {
+		kb.OnKeyUp(code)
+	}
 }
 
 func (kb *KeyboardComp) Name() string {

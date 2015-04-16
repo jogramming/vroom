@@ -2,11 +2,20 @@
    ✔ Sound system @done (15-04-13 18:06)
    ✔ Font loading @done (15-04-12 19:45)
    ✔ Labels @done (15-04-12 19:46)
-   ☐ Physics
    ✔ Keyboard events @done (15-04-13 01:07)
    ☐ Get active mouse and keyboard state
-   ☐ Change to using interface types to detect what systems a component belongs to
-     
+   ✔ Make systems be able to add components if they implent a interface (instead of going by component names) @today @done (15-04-16 17:00)
+     ✔ Fix adding/removing entities to the engine @today @done (15-04-16 17:00)
+   ✔ Make button, sprite and label components instead @done (15-04-16 22:07)
+     ✔ button @done (15-04-16 22:07)
+     ✔ label @done (15-04-16 17:47)
+     ✔ sprite @done (15-04-16 17:47)
+   ☐ Add option for mousehoversystem mbox to apply camera
 0.2:
    ✔ Entities can hold other entities @done (15-04-13 02:41)
    ☐ Animated sprites
+   ☐ Physics
+
+Before Ludum dare:
+  ☐ 0.2
+  ✔ Try to compile simple game on linux, osx and windows! @done (15-04-16 17:47)

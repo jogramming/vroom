@@ -112,37 +112,61 @@ func (e *Engine) AddEntity(entity Entity) {
 	e.CurrentScene.AddEntity(entity)
 
 	// Initialize all the components
-	// And add them to systems
-	for name, compSlice := range entity.GetComponents() {
+	// And add them to system
+	for _, compSlice := range entity.GetComponents() {
 		for _, system := range e.Systems {
-			for _, sysName := range system.GetListenComponents() {
-				if name == sysName {
-					for _, comp := range compSlice {
-						if !comp.InitCalled() {
-							comp.SetInitCalled()
-							comp.Init()
-						}
-						system.AddComponent(comp)
-					}
+			for _, component := range compSlice {
+				if !component.InitCalled() {
+					component.SetInitCalled()
+					component.Init()
 				}
+				system.AddComponent(component)
 			}
 		}
 	}
+
+	// for name, compSlice := range entity.GetComponents() {
+	// 	for _, system := range e.Systems {
+	// 		for _, sysName := range system.GetListenComponents() {
+	// 			if name == sysName {
+	// 				for _, comp := range compSlice {
+	// 					if !comp.InitCalled() {
+	// 						comp.SetInitCalled()
+	// 						comp.Init()
+	// 					}
+	// 					system.AddComponent(comp)
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
+
 	entity.Start()
 }
 
+// Removes the entity and all its children from the current scene
 func (e *Engine) RemoveEntity(entity Entity) {
-	for name, compSlice := range entity.GetComponents() {
-		for _, system := range e.Systems {
-			for _, sysName := range system.GetListenComponents() {
-				if name == sysName {
-					for _, comp := range compSlice {
-						system.RemoveComponent(comp)
-					}
-				}
+	// Call recusrively on children
+	children := entity.GetChildren(false)
+	if len(children) > 0 {
+		for _, ent := range children {
+			e.RemoveEntity(ent)
+		}
+	}
+
+	for _, compSlice := range entity.GetComponents() {
+		for _, component := range compSlice {
+			for _, system := range e.Systems {
+				system.RemoveComponent(component)
 			}
 		}
 	}
+}
+
+// Removes and destroys an entity and all its children
+func (e *Engine) DestroyEntity(entity Entity) {
+	e.RemoveEntity(entity)
+	entity.Destroy()
 }
 
 func (e *Engine) LoadScene(scene *Scene) {

@@ -1,13 +1,13 @@
 package vroom
 
 import (
+	"fmt"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 type System interface {
 	AddComponent(component Component)
 	RemoveComponent(component Component)
-	GetListenComponents() []string // The components this system will contain
 	//GetComponents() []Component
 	//ForEachComponent(cb func(Component) bool) // Callback takes component as arguement and returns wether to keep it in the slice or not
 }
@@ -44,7 +44,7 @@ func (bs *BaseSystem) GetListenComponents() []string {
 }
 
 func (bs *BaseSystem) GetComponents() []Component {
-	return nil
+	return bs.Components
 }
 
 func (bs *BaseSystem) ClearComponents() {
@@ -73,19 +73,20 @@ func (bs *BaseSystem) ForEachComponent(cb func(Component) bool) {
 
 // Some core systems
 type DrawSystem struct {
-	components map[int][]*DrawComp
+	components map[int][]DrawAble
 }
 
 func (ds *DrawSystem) AddComponent(component Component) {
-	cast, ok := component.(*DrawComp)
+	cast, ok := component.(DrawAble)
 	if !ok {
 		return
 	}
 
-	layer := cast.Layer
+	fmt.Println("Added Component to DrawSystem", component.Name())
+	layer := cast.GetLayer()
 
 	if ds.components == nil {
-		ds.components = make(map[int][]*DrawComp)
+		ds.components = make(map[int][]DrawAble)
 	}
 
 	compSlice := ds.components[layer]
@@ -94,12 +95,12 @@ func (ds *DrawSystem) AddComponent(component Component) {
 }
 
 func (ds *DrawSystem) RemoveComponent(component Component) {
-	cast, ok := component.(*DrawComp)
+	cast, ok := component.(DrawAble)
 	if !ok {
 		return
 	}
 
-	layer := cast.Layer
+	layer := cast.GetLayer()
 
 	compSlice := ds.components[layer]
 
@@ -127,24 +128,16 @@ func (ds *DrawSystem) ClearComponents() {
 	ds.components = nil
 }
 
-func (ds *DrawSystem) GetListenComponents() []string {
-	return []string{"DrawComp"}
-}
-
 func (ds *DrawSystem) Draw(renderer *sdl.Renderer) {
 	for i := -10; i < 10; i++ {
 		compSlice := ds.components[i]
-
 		for _, comp := range compSlice {
 			if comp == nil {
 				ds.RemoveComponent(comp)
 				continue
 			}
-			if comp.Draw == nil {
-				continue
-			}
 
-			if comp.GetParent().Enabled() {
+			if comp.Enabled() && (comp.GetParent() != nil && comp.GetParent().Enabled()) {
 				comp.Draw(renderer)
 			}
 		}
@@ -155,19 +148,21 @@ type UpdateSystem struct {
 	BaseSystem
 }
 
-func (us *UpdateSystem) GetListenComponents() []string {
-	return []string{"UpdateComp"}
+func (us *UpdateSystem) AddComponent(component Component) {
+	_, ok := component.(UpdateAble)
+	if ok {
+		if us.Components == nil {
+			us.Components = make([]Component, 0)
+		}
+		us.Components = append(us.Components, component)
+	}
 }
 
 func (us *UpdateSystem) Update(dt float64) {
 	us.ForEachComponent(func(comp Component) bool {
-		cast, ok := comp.(*UpdateComp)
+		cast, ok := comp.(UpdateAble)
 		if !ok {
 			return false
-		}
-
-		if cast.Update == nil {
-			return true
 		}
 
 		cast.Update(dt)
@@ -179,28 +174,24 @@ type MouseClickSystem struct {
 	BaseSystem
 }
 
-func (mc *MouseClickSystem) GetListenComponents() []string {
-	return []string{"MouseClickComp"}
+func (mc *MouseClickSystem) AddComponent(component Component) {
+	_, ok := component.(MouseClickListener)
+	if ok {
+		if mc.Components == nil {
+			mc.Components = make([]Component, 0)
+		}
+		mc.Components = append(mc.Components, component)
+	}
 }
 
 func (mc *MouseClickSystem) MouseButtonEvent(x, y, button int, up bool) {
 	mc.ForEachComponent(func(comp Component) bool {
-		cast, ok := comp.(*MouseClickComp)
+		cast, ok := comp.(MouseClickListener)
 		if !ok {
 			return false
 		}
 
 		// Check if the callbacks are nil or not
-		if up {
-			if cast.MouseUp == nil {
-				return true
-			}
-		} else {
-			if cast.MouseDown == nil {
-				return true
-			}
-		}
-
 		mboxComp := cast.GetComponent("MouseBox")
 		transformComp := cast.GetComponent("Transform")
 		if mboxComp != nil && transformComp != nil {
@@ -231,16 +222,20 @@ type MouseHoverSystem struct {
 	BaseSystem
 }
 
-func (mh *MouseHoverSystem) GetListenComponents() []string {
-	return []string{"MouseHoverComp"}
+func (mh *MouseHoverSystem) AddComponent(component Component) {
+	_, ok := component.(MouseHoverListener)
+	if ok {
+		fmt.Println("Added component to mousehoversystem: ", component.Name())
+		if mh.Components == nil {
+			mh.Components = make([]Component, 0)
+		}
+		mh.Components = append(mh.Components, component)
+	}
 }
 
-// 	MouseeEnter func()
-// 	MouseLeave func()
-// 	MouseMove
 func (mh *MouseHoverSystem) MouseMove(x, y int) {
 	mh.ForEachComponent(func(comp Component) bool {
-		cast, ok := comp.(*MouseHoverComp)
+		cast, ok := comp.(MouseHoverListener)
 		if !ok {
 			return false
 		}
@@ -253,19 +248,13 @@ func (mh *MouseHoverSystem) MouseMove(x, y int) {
 				if x > int(transform.Position.X) && x < int(transform.Position.X)+mbox.W &&
 					y > int(transform.Position.Y) && y < int(transform.Position.Y)+mbox.H {
 					if !mbox.Active {
-						if cast.MouseEnter != nil {
-							cast.MouseEnter()
-						}
+						cast.MouseEnter()
 						mbox.Active = true
 					}
-					if cast.MouseMove != nil {
-						cast.MouseMove(x, y)
-					}
+					cast.MouseMove(x, y)
 				} else {
 					if mbox.Active {
-						if cast.MouseLeave != nil {
-							cast.MouseLeave()
-						}
+						cast.MouseLeave()
 						mbox.Active = false
 					}
 				}
@@ -279,27 +268,36 @@ func (mh *MouseHoverSystem) MouseMove(x, y int) {
 
 type KeyboardSystem struct {
 	BaseSystem
+	Keys map[sdl.Keycode]bool
 }
 
-func (kb *KeyboardSystem) GetListenComponents() []string {
-	return []string{"KeyboardComp"}
+func (kb *KeyboardSystem) AddComponent(component Component) {
+	_, ok := component.(KeyboardListener)
+	if ok {
+		if kb.Components == nil {
+			kb.Components = make([]Component, 0)
+		}
+		kb.Components = append(kb.Components, component)
+	}
 }
 
 func (kb *KeyboardSystem) KeyboardEvent(key sdl.Keycode, up bool) {
+	if kb.Keys == nil {
+		kb.Keys = make(map[sdl.Keycode]bool)
+	}
+
+	kb.Keys[key] = !up
+
 	kb.ForEachComponent(func(comp Component) bool {
-		casted, ok := comp.(*KeyboardComp)
+		casted, ok := comp.(KeyboardListener)
 		if !ok {
 			return false
 		}
 
 		if up {
-			if casted.KeyUp != nil {
-				casted.KeyUp(key)
-			}
+			casted.KeyUp(key)
 		} else {
-			if casted.KeyDown != nil {
-				casted.KeyDown(key)
-			}
+			casted.KeyDown(key)
 		}
 		return true
 	})

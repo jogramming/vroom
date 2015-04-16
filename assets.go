@@ -108,18 +108,3 @@ func (e *Engine) CreateOutlinedTextTexture(font, outline string, text string, co
 func (e *Engine) GetTexture(name string) *sdl.Texture {
 	return e.Textures[name]
 }
-
-func (e *Engine) GetSpriteFromTexture(name string) *Sprite {
-	texutre := e.GetTexture(name)
-	if texutre == nil {
-		return nil
-	}
-	_, _, w, h, _ := texutre.Query()
-
-	sprite := &Sprite{
-		Texture: texutre,
-		Width:   w,
-		Height:  h,
-	}
-	return sprite
-}
