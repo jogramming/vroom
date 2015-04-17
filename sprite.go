@@ -68,7 +68,7 @@ func (s *Sprite) Draw(renderer *sdl.Renderer) {
 
 	position := casted.CalcPos()
 	if !s.IgnoreCamera {
-		position.Add(s.Parent.GetEngine().Camera)
+		position = position.Add(s.Parent.GetEngine().Camera)
 	}
 
 	angle := casted.CalcAngle()

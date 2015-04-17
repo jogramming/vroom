@@ -1,9 +1,5 @@
 package vroom
 
-import (
-	"github.com/vova616/chipmunk/vect"
-)
-
 type Entity interface {
 	Init()  // Called when the entity is supposed to be initialized
 	Start() // Called when the entity is added to the currently active scene
@@ -188,6 +184,6 @@ func (be *BaseEntity) Destroy() {
 // Not actually empty contains a transform
 func NewEntity(x, y int) Entity {
 	ent := &BaseEntity{}
-	ent.AddComponent(NewTransform(vect.Float(x), vect.Float(y), 0))
+	ent.AddComponent(NewTransform(float64(x), float64(y), 0))
 	return ent
 }

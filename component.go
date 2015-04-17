@@ -1,9 +1,8 @@
 package vroom
 
 import (
+	"github.com/ianremmler/chipmunk"
 	"github.com/veandco/go-sdl2/sdl"
-	"github.com/vova616/chipmunk"
-	"github.com/vova616/chipmunk/vect"
 )
 
 type Component interface {
@@ -88,14 +87,14 @@ func (bc *BaseComponent) Destroy() {
 // Core components
 type Transform struct {
 	BaseComponent
-	Position vect.Vect
-	Angle    vect.Float
+	Position chipmunk.Vect
+	Angle    float64
 	Scale    float32
 }
 
-func NewTransform(x, y, angle vect.Float) *Transform {
+func NewTransform(x, y, angle float64) *Transform {
 	return &Transform{
-		Position: vect.Vect{x, y},
+		Position: chipmunk.Vect{x, y},
 		Angle:    angle,
 	}
 }
@@ -104,23 +103,24 @@ func (t *Transform) Name() string {
 	return "Transform"
 }
 
-func (t *Transform) CalcPos() vect.Vect {
-	physComp := t.GetComponent("PhysBodyComp")
-	if physComp != nil {
-		casted := physComp.(*PhysBodyComp)
-		if casted.Body != nil {
-			pos := casted.Body.Position()
-			return pos
+func (t *Transform) CalcPos() chipmunk.Vect {
+	/*
+		physComp := t.GetComponent("PhysBodyComp")
+		if physComp != nil {
+			casted := physComp.(*PhysBodyComp)
+			if casted.Body != nil {
+				pos := casted.Body.Position()
+				return pos
+			}
 		}
-	}
+	*/
 
 	parentEntity := t.GetParent().GetParent()
 	if parentEntity != nil {
 		transformComp := parentEntity.GetComponent("Transform")
 		if transformComp != nil {
 			casted := transformComp.(*Transform)
-			copy := t.Position
-			copy.Add(casted.CalcPos())
+			copy := casted.CalcPos().Add(t.Position)
 			return copy
 		}
 	}
@@ -128,22 +128,22 @@ func (t *Transform) CalcPos() vect.Vect {
 	return t.Position
 }
 
-func (t *Transform) GetScreenPos() vect.Vect {
-	realPos := t.CalcPos()
-	realPos.Add(t.GetParent().GetEngine().Camera)
+func (t *Transform) GetScreenPos() chipmunk.Vect {
+	realPos := t.CalcPos().Add(t.Parent.GetEngine().Camera)
 	return realPos
 }
 
-func (t *Transform) CalcAngle() vect.Float {
-	physComp := t.GetComponent("PhysBodyComp")
-	if physComp != nil {
-		casted := physComp.(*PhysBodyComp)
-		if casted.Body != nil {
-			angle := casted.Body.Angle() * chipmunk.DegreeConst
-			return angle
+func (t *Transform) CalcAngle() float64 {
+	/*
+		physComp := t.GetComponent("PhysBodyComp")
+		if physComp != nil {
+			casted := physComp.(*PhysBodyComp)
+			if casted.Body != nil {
+				angle := casted.Body.Angle() * chipmunk.DegreeConst
+				return angle
+			}
 		}
-	}
-
+	*/
 	parentEntity := t.GetParent().GetParent()
 	if parentEntity != nil {
 
@@ -261,6 +261,7 @@ func (kb *KeyboardComp) Name() string {
 	return "KeyboardComp"
 }
 
+/*
 type PhysBodyComp struct {
 	BaseComponent
 	Body                 *chipmunk.Body
@@ -332,3 +333,4 @@ func (pb *PhysBodyComp) Destroy() {
 	}
 	pb.BaseComponent.Destroy()
 }
+*/

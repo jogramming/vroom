@@ -1,12 +1,11 @@
 package vroom
 
 import (
+	"github.com/ianremmler/chipmunk"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_image"
 	"github.com/veandco/go-sdl2/sdl_mixer"
 	"github.com/veandco/go-sdl2/sdl_ttf"
-	"github.com/vova616/chipmunk"
-	"github.com/vova616/chipmunk/vect"
 )
 
 type Engine struct {
@@ -15,7 +14,7 @@ type Engine struct {
 	running      bool
 	CurrentScene Scene
 	Systems      []System
-	Camera       vect.Vect
+	Camera       chipmunk.Vect
 
 	// SDL
 	window   *sdl.Window
@@ -34,7 +33,7 @@ type Engine struct {
 	Sounds   map[string]*mix.Chunk
 
 	//Physics
-	Space *chipmunk.Space
+	Space chipmunk.Space
 }
 
 func (e *Engine) InitCoreSystems() {
@@ -50,8 +49,8 @@ func (e *Engine) InitCoreSystems() {
 	e.AddSystem(e.MouseHoverSystem)
 	e.AddSystem(e.Keyboardsystem)
 
-	e.Space = chipmunk.NewSpace()
-	e.Space.Gravity = vect.Vect{0, 10}
+	e.Space = chipmunk.SpaceNew()
+	e.Space.SetGravity(chipmunk.Vect{0, -100})
 }
 
 func (e *Engine) InitSDL(w, h int, title string) error {

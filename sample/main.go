@@ -5,7 +5,6 @@ import (
 	"github.com/jonas747/vroom"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_mixer"
-	"github.com/vova616/chipmunk/vect"
 )
 
 var Engine *vroom.Engine
@@ -105,7 +104,7 @@ type SimpleButton struct {
 
 func (sb *SimpleButton) Init() {
 	fmt.Println("Init Called")
-	transform := vroom.NewTransform(vect.Float(sb.X), vect.Float(sb.Y), 0)
+	transform := vroom.NewTransform(float64(sb.X), float64(sb.Y), 0)
 	sb.AddComponent(transform)
 
 	mbox := &vroom.MouseBox{
