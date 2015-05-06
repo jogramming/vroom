@@ -1,11 +1,13 @@
 package vroom
 
 import (
-	"github.com/ianremmler/chipmunk"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_image"
 	"github.com/veandco/go-sdl2/sdl_mixer"
 	"github.com/veandco/go-sdl2/sdl_ttf"
+	"github.com/vova616/chipmunk"
+	"github.com/vova616/chipmunk/vect"
+	"math"
 )
 
 type Engine struct {
@@ -14,7 +16,7 @@ type Engine struct {
 	running      bool
 	CurrentScene Scene
 	Systems      []System
-	Camera       chipmunk.Vect
+	Camera       vect.Vect
 
 	// SDL
 	window   *sdl.Window
@@ -33,7 +35,10 @@ type Engine struct {
 	Sounds   map[string]*mix.Chunk
 
 	//Physics
-	Space chipmunk.Space
+	Space *chipmunk.Space
+
+	// Misc
+	ClearColor sdl.Color
 }
 
 func (e *Engine) InitCoreSystems() {
@@ -49,8 +54,8 @@ func (e *Engine) InitCoreSystems() {
 	e.AddSystem(e.MouseHoverSystem)
 	e.AddSystem(e.Keyboardsystem)
 
-	e.Space = chipmunk.SpaceNew()
-	e.Space.SetGravity(chipmunk.Vect{0, -100})
+	e.Space = chipmunk.NewSpace()
+	e.Space.Gravity = vect.Vect{0, 20}
 }
 
 func (e *Engine) InitSDL(w, h int, title string) error {
@@ -106,10 +111,25 @@ func (e *Engine) Stop() {
 	e.running = false
 }
 
-// We do not add children of the entity were adding, maybe we should? nah...
+// Add this entity and all its children
 func (e *Engine) AddEntity(entity Entity) {
 	entity.SetEngine(e)
-	e.CurrentScene.AddEntity(entity)
+	if !entity.InitCalled() {
+		entity.Init()
+		entity.SetInitCalled()
+	}
+
+	children := entity.GetChildren(true)
+
+	if len(children) > 0 {
+		for _, child := range children {
+			if !child.Added() {
+				e.AddEntity(child)
+			}
+		}
+	}
+
+	entity.SetAdded(true)
 
 	// Initialize all the components
 	// And add them to system
@@ -124,6 +144,7 @@ func (e *Engine) AddEntity(entity Entity) {
 			}
 		}
 	}
+
 	entity.Start()
 }
 
@@ -136,6 +157,7 @@ func (e *Engine) RemoveEntity(entity Entity) {
 			e.RemoveEntity(ent)
 		}
 	}
+	entity.SetAdded(false)
 
 	for _, compSlice := range entity.GetComponents() {
 		for _, component := range compSlice {
@@ -150,6 +172,13 @@ func (e *Engine) RemoveEntity(entity Entity) {
 func (e *Engine) DestroyEntity(entity Entity) {
 	e.RemoveEntity(entity)
 	entity.Destroy()
+}
+
+// Remove all entities
+func (e *Engine) Clear() {
+	for _, v := range e.Systems {
+
+	}
 }
 
 func (e *Engine) LoadScene(scene *Scene) {
@@ -174,4 +203,12 @@ func (e *Engine) Destroy() {
 
 func (e *Engine) GetKey(key sdl.Keycode) bool {
 	return e.Keyboardsystem.Keys[key]
+}
+
+func RadiansToDeDegrees(radians float64) float64 {
+	return radians * (180 / math.Pi)
+}
+
+func DegreesToRadians(degrees float64) float64 {
+	return degrees * (math.Pi / 180)
 }

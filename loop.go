@@ -2,6 +2,7 @@ package vroom
 
 import (
 	"github.com/veandco/go-sdl2/sdl"
+	"github.com/vova616/chipmunk/vect"
 	"time"
 )
 
@@ -14,7 +15,14 @@ func (e *Engine) Loop() {
 		// Calculate deltatime
 		deltatime := time.Since(lastUpdate)
 		lastUpdate = time.Now()
-		dt := float64(deltatime.Nanoseconds()) / float64(time.Millisecond)
+		dt := float64(deltatime.Nanoseconds()) / float64(time.Second)
+
+		// Clean up systems, maybe find a better way to do this later
+		for _, v := range e.Systems {
+			if time.Since(v.LastCleanUp()).Seconds() > 1 {
+				v.CleanUp()
+			}
+		}
 
 		e.ProcessEvents()
 		e.StepPhysics(dt)
@@ -78,7 +86,7 @@ func (e *Engine) ProcessEvents() {
 }
 
 func (e *Engine) StepPhysics(dt float64) {
-	e.Space.Step(dt / 1000)
+	e.Space.Step(vect.Float(dt))
 }
 
 func (e *Engine) Update(dt float64) {
@@ -86,7 +94,7 @@ func (e *Engine) Update(dt float64) {
 }
 
 func (e *Engine) Draw() {
-	e.renderer.SetDrawColor(0, 0, 0, 255)
+	e.renderer.SetDrawColor(e.ClearColor.R, e.ClearColor.G, e.ClearColor.B, 255)
 	e.renderer.Clear()
 	e.DrawSystem.Draw(e.renderer)
 	e.renderer.Present()

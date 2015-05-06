@@ -27,6 +27,9 @@ type Entity interface {
 	RemoveChild(e Entity, removeFromScene bool)
 	GetChildren(recursive bool) []Entity
 
+	Added() bool
+	SetAdded(added bool)
+
 	Destroy()
 }
 
@@ -37,6 +40,7 @@ type BaseEntity struct {
 	Disabled   bool
 	Engine     *Engine
 	Parent     Entity
+	IsAdded    bool
 }
 
 // Use the init functions to add the components
@@ -67,6 +71,10 @@ func (be *BaseEntity) SetEngine(e *Engine) {
 func (be *BaseEntity) Start() {}
 
 func (be *BaseEntity) AddComponent(component Component) {
+	if component == nil {
+		// Silly you adding nil components...
+		return
+	}
 	if be.Components == nil {
 		be.Components = make(map[string][]Component, 0)
 	}
@@ -179,6 +187,14 @@ func (be *BaseEntity) Destroy() {
 			comp.Destroy()
 		}
 	}
+}
+
+func (be *BaseEntity) Added() bool {
+	return be.IsAdded
+}
+
+func (be *BaseEntity) SetAdded(added bool) {
+	be.IsAdded = added
 }
 
 // Not actually empty contains a transform

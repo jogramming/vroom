@@ -1,19 +1,22 @@
 package vroom
 
 import (
-	"fmt"
 	"github.com/veandco/go-sdl2/sdl"
+	"github.com/vova616/chipmunk/vect"
+	"time"
 )
 
 type System interface {
 	AddComponent(component Component)
 	RemoveComponent(component Component)
-	//GetComponents() []Component
-	//ForEachComponent(cb func(Component) bool) // Callback takes component as arguement and returns wether to keep it in the slice or not
+	CleanUp()
+	LastCleanUp() time.Time
+	Clear()
 }
 
 type BaseSystem struct {
-	Components []Component
+	Components  []Component
+	lastCleanUp time.Time
 }
 
 func (bs *BaseSystem) AddComponent(component Component) {
@@ -51,29 +54,67 @@ func (bs *BaseSystem) ClearComponents() {
 	bs.Components = nil
 }
 
-func (bs *BaseSystem) ForEachComponent(cb func(Component) bool) {
+// cleanup remove nil components
+func (bs *BaseSystem) CleanUp() {
+	bs.lastCleanUp = time.Now()
 	newSlice := make([]Component, 0)
+	for _, v := range bs.Components {
+		if v == nil {
+			continue
+		}
+		newSlice = append(newSlice, v)
+	}
+}
+
+func (bs *BaseSystem) Clear() {
+	bs.Components = make([]Component, 0)
+}
+
+func (bs *BaseSystem) ForEachComponent(cb func(Component) bool) {
 	for _, v := range bs.Components {
 		if v == nil {
 			continue
 		}
 
 		if !v.GetParent().Enabled() {
-			newSlice = append(newSlice, v)
 			continue
 		}
 
-		keep := cb(v)
-		if keep {
-			newSlice = append(newSlice, v)
-		}
+		cb(v)
 	}
-	bs.Components = newSlice
+}
+
+func (bs *BaseSystem) LastCleanUp() time.Time {
+	return bs.lastCleanUp
 }
 
 // Some core systems
 type DrawSystem struct {
-	components map[int][]DrawAble
+	components  map[int][]DrawAble
+	lastCleanUp time.Time
+}
+
+func (ds *DrawSystem) Clear() {
+	ds.components = make([]Component, 0)
+}
+
+func (ds *DrawSystem) LastCleanUp() time.Time {
+	return ds.lastCleanUp
+}
+
+// cleanup remove nil components, maybe not needed since we do not do any expensive checking here
+func (ds *DrawSystem) CleanUp() {
+	ds.lastCleanUp = time.Now()
+	for k, layer := range ds.components {
+		newSlice := make([]DrawAble, 0)
+		for _, v := range layer {
+			if v == nil {
+				continue
+			}
+			newSlice = append(newSlice, v)
+		}
+		ds.components[k] = newSlice
+	}
 }
 
 func (ds *DrawSystem) AddComponent(component Component) {
@@ -82,7 +123,6 @@ func (ds *DrawSystem) AddComponent(component Component) {
 		return
 	}
 
-	fmt.Println("Added Component to DrawSystem", component.Name())
 	layer := cast.GetLayer()
 
 	if ds.components == nil {
@@ -197,9 +237,12 @@ func (mc *MouseClickSystem) MouseButtonEvent(x, y, button int, up bool) {
 		if mboxComp != nil && transformComp != nil {
 			transform, ok := transformComp.(*Transform)
 			mbox, ok2 := mboxComp.(*MouseBox)
+			position := transform.Position
+			position.X -= vect.Float(mbox.W / 2)
+			position.Y -= vect.Float(mbox.H / 2)
 			if ok && ok2 {
-				if x > int(transform.Position.X) && x < int(transform.Position.X)+mbox.W &&
-					y > int(transform.Position.Y) && y < int(transform.Position.Y)+mbox.H {
+				if x > int(position.X) && x < int(position.X)+mbox.W &&
+					y > int(position.Y) && y < int(position.Y)+mbox.H {
 					if up {
 						cast.MouseUp(x, y, button)
 					} else {
@@ -225,7 +268,6 @@ type MouseHoverSystem struct {
 func (mh *MouseHoverSystem) AddComponent(component Component) {
 	_, ok := component.(MouseHoverListener)
 	if ok {
-		fmt.Println("Added component to mousehoversystem: ", component.Name())
 		if mh.Components == nil {
 			mh.Components = make([]Component, 0)
 		}
@@ -244,9 +286,12 @@ func (mh *MouseHoverSystem) MouseMove(x, y int) {
 		if mboxComp != nil && transformComp != nil {
 			transform, ok := transformComp.(*Transform)
 			mbox, ok2 := mboxComp.(*MouseBox)
+			position := transform.Position
+			position.X -= vect.Float(mbox.W / 2)
+			position.Y -= vect.Float(mbox.H / 2)
 			if ok && ok2 {
-				if x > int(transform.Position.X) && x < int(transform.Position.X)+mbox.W &&
-					y > int(transform.Position.Y) && y < int(transform.Position.Y)+mbox.H {
+				if x > int(position.X) && x < int(position.X)+mbox.W &&
+					y > int(position.Y) && y < int(position.Y)+mbox.H {
 					if !mbox.Active {
 						cast.MouseEnter()
 						mbox.Active = true

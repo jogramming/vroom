@@ -6,8 +6,4 @@ type Scene struct {
 
 func (s *Scene) AddEntity(entity Entity) {
 	s.Entities = append(s.Entities, entity)
-	if !entity.InitCalled() {
-		entity.Init()
-		entity.SetInitCalled()
-	}
 }

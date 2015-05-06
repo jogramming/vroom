@@ -3,6 +3,7 @@ package vroom
 import (
 	"fmt"
 	"github.com/veandco/go-sdl2/sdl"
+	"github.com/vova616/chipmunk/vect"
 )
 
 // Label component
@@ -34,6 +35,14 @@ func NewLabel(text string, center bool, font, outline string) *Label {
 	}
 }
 
+func NewSimpleLabelEntity(x, y float64, text string, center bool, font, outline string, ignoreCamera bool) (Entity, *Label) {
+	label := NewLabel(text, center, font, outline)
+	label.IgnoreCamera = ignoreCamera
+	ent := NewEntity(int(x), int(y))
+	ent.AddComponent(label)
+	return ent, label
+}
+
 func (l *Label) Init() {
 	if l.Text != "" {
 		l.SetText(l.Text)
@@ -56,17 +65,17 @@ func (l *Label) Draw(renderer *sdl.Renderer) {
 
 	position := casted.CalcPos()
 	if !l.IgnoreCamera {
-		position = l.Parent.GetEngine().Camera.Add(position)
+		position.Sub(l.Parent.GetEngine().Camera)
 	}
 
 	center := &sdl.Point{X: int32(l.Width / 2), Y: int32(l.Height / 2)}
 	if l.CenterHor {
-		position.X -= float64(l.Width / 2)
+		position.X -= vect.Float(l.Width / 2)
 		center.X -= int32(l.Width / 2)
 	}
 
 	if l.CenterVert {
-		position.Y -= float64(l.Height / 2)
+		position.Y -= vect.Float(l.Height / 2)
 		center.Y -= int32(l.Height / 2)
 	}
 	angle := casted.CalcAngle()

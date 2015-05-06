@@ -3,8 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/jonas747/vroom"
-	"github.com/veandco/go-sdl2/sdl"
-	"github.com/veandco/go-sdl2/sdl_mixer"
+	"github.com/vova616/chipmunk/vect"
 )
 
 var Engine *vroom.Engine
@@ -94,6 +93,37 @@ func initScene() {
 		H:    40,
 	}
 	Engine.AddEntity(button)
+
+	gorund := &Box{
+		X:       320,
+		Y:       300,
+		W:       400,
+		H:       30,
+		Static:  true,
+		Texture: "box",
+	}
+	Engine.AddEntity(gorund)
+
+	sbox := &Box{
+		X:       320,
+		Y:       220,
+		W:       50,
+		H:       50,
+		Static:  true,
+		Texture: "box",
+	}
+	Engine.AddEntity(sbox)
+
+	falling := &Box{
+		X:       280,
+		Y:       100,
+		W:       50,
+		H:       50,
+		Static:  false,
+		Mass:    100,
+		Texture: "box",
+	}
+	Engine.AddEntity(falling)
 }
 
 type SimpleButton struct {
@@ -115,7 +145,7 @@ func (sb *SimpleButton) Init() {
 
 	// Label has a different position so has to be in its own enity (but is a child of this)
 	label := vroom.NewLabel(sb.Text, true, "mainfont", "mainfont_outline")
-	lEntity := vroom.NewEntity(sb.W/2, sb.H/2)
+	lEntity := vroom.NewEntity(0, 0)
 	lEntity.AddComponent(label)
 
 	sb.AddChild(lEntity, true)
@@ -141,4 +171,32 @@ func (sb *SimpleButton) Init() {
 		},
 	}
 	sb.AddComponent(buttonComp)
+}
+
+type SimpleSprite struct {
+	vroom.BaseEntity
+	X, Y, W, H int
+	texture    string
+}
+
+type Box struct {
+	vroom.BaseEntity
+	X, Y, W, H float64
+	Static     bool
+	Mass       float64
+	Texture    string
+}
+
+func (b *Box) Init() {
+	b.AddComponent(vroom.NewTransform(b.X, b.Y, 0))
+
+	sprite := Engine.NewSprite(int(b.W), int(b.H), true, b.Texture)
+	b.AddComponent(sprite)
+
+	physComp := &vroom.PhysBodyComp{}
+	b.AddComponent(physComp)
+
+	physComp.CreateBoxBody(b.W, b.H, vect.Float(b.Mass), b.Static)
+	Engine.Space.AddBody(physComp.Body)
+
 }

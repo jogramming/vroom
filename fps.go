@@ -14,7 +14,7 @@ func (fps *FPSCounter) Update(dt float64) {
 		return
 	}
 
-	numFps := 1000 / dt
+	numFps := 1 / dt
 	fps.Label.SetText(fmt.Sprintf("FPS: %.2f", numFps))
 }
 
