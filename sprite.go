@@ -3,7 +3,6 @@ package vroom
 import (
 	"fmt"
 	"github.com/veandco/go-sdl2/sdl"
-	"github.com/vova616/chipmunk/vect"
 )
 
 // Simple sprite component for drawing sprites
@@ -79,7 +78,7 @@ func (s *Sprite) Draw(renderer *sdl.Renderer) {
 	//center := &sdl.Point{X: int32(s.Width), Y: int32(s.Height)}
 	//center := &sdl.Point{}
 
-	dstRect := &sdl.Rect{X: int32(position.X - vect.Float(s.Width/2)), Y: int32(position.Y - vect.Float(s.Height/2)), W: int32(s.Width), H: int32(s.Height)}
+	dstRect := &sdl.Rect{X: int32(position.X - float64(s.Width/2)), Y: int32(position.Y - float64(s.Height/2)), W: int32(s.Width), H: int32(s.Height)}
 	renderer.CopyEx(s.Texture, nil, dstRect, float64(angle), center, sdl.FLIP_NONE)
 }
 

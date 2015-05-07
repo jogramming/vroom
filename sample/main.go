@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"github.com/jonas747/vroom"
-	"github.com/vova616/chipmunk/vect"
+	"github.com/veandco/go-sdl2/sdl"
+	"github.com/veandco/go-sdl2/sdl_mixer"
+	"math"
 )
 
 var Engine *vroom.Engine
@@ -120,8 +122,8 @@ func initScene() {
 		W:       50,
 		H:       50,
 		Static:  false,
-		Mass:    100,
 		Texture: "box",
+		Mass:    100000,
 	}
 	Engine.AddEntity(falling)
 }
@@ -193,10 +195,10 @@ func (b *Box) Init() {
 	sprite := Engine.NewSprite(int(b.W), int(b.H), true, b.Texture)
 	b.AddComponent(sprite)
 
-	physComp := &vroom.PhysBodyComp{}
+	if b.Static {
+		b.Mass = math.MaxFloat64
+	}
+
+	physComp := Engine.NewPhysBodyComp(b.X, b.Y, b.W, b.H, b.Mass)
 	b.AddComponent(physComp)
-
-	physComp.CreateBoxBody(b.W, b.H, vect.Float(b.Mass), b.Static)
-	Engine.Space.AddBody(physComp.Body)
-
 }

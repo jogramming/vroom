@@ -10,12 +10,28 @@
      ✔ button @done (15-04-16 22:07)
      ✔ label @done (15-04-16 17:47)
      ✔ sprite @done (15-04-16 17:47)
-   ☐ Add option for mousehoversystem mbox to apply camera
 0.2:
    ✔ Entities can hold other entities @done (15-04-13 02:41)
-   ☐ Animated sprites
+   ✔ Animated sprites @done (15-05-06 18:51)
    ✔ Physics @done (15-04-18 09:17)
-
-Before Ludum dare:
-  ☐ 0.2
-  ☐ Try to compile simple game on linux, osx and windows!
+0.3:
+ ☐ Headless server mode
+ ☐ Adjustable FPS
+   Instead of a locked fps, instead set a max
+ ☐ Better physics
+   Using my own fork of go-box2d-lite
+   ✔ Collision callbacks @done (15-05-07 13:55)
+   ✔ Removing objects from the world @done (15-05-07 14:34)
+   ☐ Circle bodies
+   ✔ Integrate into engine @done (15-05-07 14:34)
+   ☐ Query a rect
+0.4:
+ ☐ Spritesheets
+ ☐ Physics mask
+   Objects with their masks "and" togheter and the result being >1 collides, rest is ignored
+ ☐ Improve systems
+   Instead of adding just the components, add the entities themselves, children of entities isnt added to the main scene, but systems will recursively go through each of their children
+ ☐ Proper transformation stack
+   With the improved systems we can do a proper transformation stack
+0.5:
+  Experiment with concurrency

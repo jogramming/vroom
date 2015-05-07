@@ -198,7 +198,7 @@ func (be *BaseEntity) SetAdded(added bool) {
 }
 
 // Not actually empty contains a transform
-func NewEntity(x, y int) Entity {
+func NewEntity(x, y float64) Entity {
 	ent := &BaseEntity{}
 	ent.AddComponent(NewTransform(float64(x), float64(y), 0))
 	return ent

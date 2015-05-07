@@ -1,9 +1,8 @@
 package vroom
 
 import (
+	"github.com/jonas747/go-box2d-lite/box2dlite"
 	"github.com/veandco/go-sdl2/sdl"
-	"github.com/vova616/chipmunk"
-	"github.com/vova616/chipmunk/vect"
 )
 
 type Component interface {
@@ -88,14 +87,14 @@ func (bc *BaseComponent) Destroy() {
 // Core components
 type Transform struct {
 	BaseComponent
-	Position vect.Vect
+	Position box2dlite.Vec2
 	Angle    float64
 	Scale    float32
 }
 
 func NewTransform(x, y, angle float64) *Transform {
 	return &Transform{
-		Position: vect.Vect{vect.Float(x), vect.Float(y)},
+		Position: box2dlite.Vec2{x, y},
 		Angle:    angle,
 	}
 }
@@ -104,13 +103,14 @@ func (t *Transform) Name() string {
 	return "Transform"
 }
 
-func (t *Transform) CalcPos() vect.Vect {
+func (t *Transform) CalcPos() box2dlite.Vec2 {
 	physComp := t.GetComponent("PhysBodyComp")
 	if physComp != nil {
 		casted := physComp.(*PhysBodyComp)
 		if casted.Body != nil {
-			pos := casted.Body.Position()
-			return pos
+			pos := casted.Body.Position
+			screenPos := pos.Mul(t.GetParent().GetEngine().PhysicsScale)
+			return screenPos
 		}
 	}
 
@@ -128,19 +128,18 @@ func (t *Transform) CalcPos() vect.Vect {
 	return t.Position
 }
 
-func (t *Transform) GetScreenPos() vect.Vect {
+func (t *Transform) GetScreenPos() box2dlite.Vec2 {
 	realPos := t.CalcPos()
 	realPos.Sub(t.Parent.GetEngine().Camera)
 	return realPos
 }
 
 func (t *Transform) CalcAngle() float64 {
-
 	physComp := t.GetComponent("PhysBodyComp")
 	if physComp != nil {
 		casted := physComp.(*PhysBodyComp)
 		if casted.Body != nil {
-			angle := RadiansToDeDegrees(float64(casted.Body.Angle()))
+			angle := RadiansToDeDegrees(casted.Body.Rotation)
 			return angle
 		}
 	}
@@ -264,104 +263,36 @@ func (kb *KeyboardComp) Name() string {
 
 type PhysBodyComp struct {
 	BaseComponent
-	Body                 *chipmunk.Body
-	Shape                *chipmunk.Shape
-	CollisionEnterCB     func(arbiter *chipmunk.Arbiter) bool
-	CollisionPreSolveCB  func(arbiter *chipmunk.Arbiter) bool
-	CollisionPostSolveCB func(arbiter *chipmunk.Arbiter)
-	CollisionExitCB      func(arbiter *chipmunk.Arbiter)
+	Body *box2dlite.Body
+}
+
+func (e *Engine) NewPhysBodyComp(x, y, w, h float64, mass float64) *PhysBodyComp {
+	rx := x / e.PhysicsScale
+	ry := y / e.PhysicsScale
+	rw := w / e.PhysicsScale
+	rh := h / e.PhysicsScale
+
+	body := box2dlite.Body{}
+	body.Set(&box2dlite.Vec2{rw, rh}, mass)
+	body.Position = box2dlite.Vec2{rx, ry}
+	return &PhysBodyComp{
+		Body: &body,
+	}
 }
 
 func (pb *PhysBodyComp) Name() string {
 	return "PhysBodyComp"
 }
 
-func (pb *PhysBodyComp) SetBody(body *chipmunk.Body, shape *chipmunk.Shape) {
-	transform := pb.GetComponent("Transform").(*Transform)
-	pos := transform.CalcPos()
-	angle := transform.CalcAngle()
-
-	shape.Layer = 1
-	body.SetAngle(vect.Float(angle * chipmunk.RadianConst))
-	body.SetPosition(pos)
-	body.UserData = pb.Parent
-	pb.Body = body
-	body.CallbackHandler = pb
-	pb.Shape = shape
-	shape.UserData = pb.Parent
-}
-
-func (pb *PhysBodyComp) CreateBoxBody(w, h float64, mass vect.Float, static bool) {
-	if pb.Body != nil {
-		pb.GetParent().GetEngine().Space.RemoveBody(pb.Body)
-	}
-
-	shape := chipmunk.NewBox(vect.Vect{0, 0}, vect.Float(w), vect.Float(h))
-	var body *chipmunk.Body
-	if static {
-		body = chipmunk.NewBodyStatic()
-	} else {
-		body = chipmunk.NewBody(mass, shape.Moment(float32(mass)))
-	}
-	body.AddShape(shape)
-	pb.SetBody(body, shape)
-}
-
-func (pb *PhysBodyComp) CreateCircleBody(radius, mass float64, static bool) {
-	if pb.Body != nil {
-		pb.GetParent().GetEngine().Space.RemoveBody(pb.Body)
-	}
-	shape := chipmunk.NewCircle(vect.Vect{0, 0}, float32(radius))
-	var body *chipmunk.Body
-	if static {
-		body = chipmunk.NewBodyStatic()
-	} else {
-		body = chipmunk.NewBody(vect.Float(mass), shape.Moment(float32(mass)))
-	}
-	body.AddShape(shape)
-	pb.SetBody(body, shape)
-}
 func (pb *PhysBodyComp) Init() {
 	if pb.Body != nil {
-		pb.Parent.GetEngine().Space.AddBody(pb.Body)
-	}
-}
-
-func (pb *PhysBodyComp) CollisionEnter(arbiter *chipmunk.Arbiter) bool {
-	if pb.CollisionEnterCB != nil {
-		return pb.CollisionEnterCB(arbiter)
-	}
-	return true
-}
-
-func (pb *PhysBodyComp) CollisionPreSolve(arbiter *chipmunk.Arbiter) bool {
-	if pb.CollisionPreSolveCB != nil {
-		return pb.CollisionPreSolveCB(arbiter)
-	}
-	return true
-}
-func (pb *PhysBodyComp) CollisionPostSolve(arbiter *chipmunk.Arbiter) {
-	if pb.CollisionPostSolveCB != nil {
-		pb.CollisionPostSolveCB(arbiter)
-	}
-}
-func (pb *PhysBodyComp) CollisionExit(arbiter *chipmunk.Arbiter) {
-	if pb.CollisionExitCB != nil {
-		pb.CollisionExitCB(arbiter)
+		pb.Parent.GetEngine().World.AddBody(pb.Body)
 	}
 }
 func (pb *PhysBodyComp) Destroy() {
 	if pb.Body != nil {
-		pb.GetParent().GetEngine().Space.RemoveBody(pb.Body)
-	}
-	pb.BaseComponent.Destroy()
-	if pb.Body != nil {
-		pb.Body.UserData = nil
-		pb.Body = nil
+		pb.GetParent().GetEngine().World.RemoveBody(pb.Body)
 	}
 
-	if pb.Shape != nil {
-		pb.Shape.UserData = nil
-		pb.Shape = nil
-	}
+	pb.BaseComponent.Destroy()
 }

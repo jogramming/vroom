@@ -1,12 +1,11 @@
 package vroom
 
 import (
+	"github.com/jonas747/go-box2d-lite/box2dlite"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_image"
 	"github.com/veandco/go-sdl2/sdl_mixer"
 	"github.com/veandco/go-sdl2/sdl_ttf"
-	"github.com/vova616/chipmunk"
-	"github.com/vova616/chipmunk/vect"
 	"math"
 )
 
@@ -16,7 +15,7 @@ type Engine struct {
 	running      bool
 	CurrentScene Scene
 	Systems      []System
-	Camera       vect.Vect
+	Camera       box2dlite.Vec2
 
 	// SDL
 	window   *sdl.Window
@@ -35,7 +34,8 @@ type Engine struct {
 	Sounds   map[string]*mix.Chunk
 
 	//Physics
-	Space *chipmunk.Space
+	World        *box2dlite.World
+	PhysicsScale float64
 
 	// Misc
 	ClearColor sdl.Color
@@ -54,8 +54,14 @@ func (e *Engine) InitCoreSystems() {
 	e.AddSystem(e.MouseHoverSystem)
 	e.AddSystem(e.Keyboardsystem)
 
-	e.Space = chipmunk.NewSpace()
-	e.Space.Gravity = vect.Vect{0, 20}
+	if e.PhysicsScale == 0 {
+		e.PhysicsScale = 30
+	}
+
+	gravity := box2dlite.Vec2{0.0, 10.0}
+	iterations := 10
+	world := box2dlite.NewWorld(gravity, iterations)
+	e.World = world
 }
 
 func (e *Engine) InitSDL(w, h int, title string) error {
@@ -113,6 +119,10 @@ func (e *Engine) Stop() {
 
 // Add this entity and all its children
 func (e *Engine) AddEntity(entity Entity) {
+	if entity.Added() {
+		return // If it's allready added dont add it again
+	}
+
 	entity.SetEngine(e)
 	if !entity.InitCalled() {
 		entity.Init()
@@ -177,12 +187,16 @@ func (e *Engine) DestroyEntity(entity Entity) {
 // Remove all entities
 func (e *Engine) Clear() {
 	for _, v := range e.Systems {
-
+		v.Clear()
 	}
 }
 
 func (e *Engine) LoadScene(scene *Scene) {
-	// Clear all the component buffer in the systems and load them up with components from this scene yo
+	// Clear all the component buffers in the systems and load them up with components from this scene yo
+	e.Clear()
+	for _, v := range scene.Entities {
+		e.AddEntity(v)
+	}
 }
 
 func (e *Engine) ApplyCamera(x, y int) (int, int) {

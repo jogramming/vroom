@@ -2,7 +2,6 @@ package vroom
 
 import (
 	"github.com/veandco/go-sdl2/sdl"
-	"github.com/vova616/chipmunk/vect"
 	"time"
 )
 
@@ -86,7 +85,7 @@ func (e *Engine) ProcessEvents() {
 }
 
 func (e *Engine) StepPhysics(dt float64) {
-	e.Space.Step(vect.Float(dt))
+	e.World.Step(dt)
 }
 
 func (e *Engine) Update(dt float64) {

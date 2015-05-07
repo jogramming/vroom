@@ -2,7 +2,6 @@ package vroom
 
 import (
 	"github.com/veandco/go-sdl2/sdl"
-	"github.com/vova616/chipmunk/vect"
 	"time"
 )
 
@@ -95,7 +94,7 @@ type DrawSystem struct {
 }
 
 func (ds *DrawSystem) Clear() {
-	ds.components = make([]Component, 0)
+	ds.components = make(map[int][]DrawAble)
 }
 
 func (ds *DrawSystem) LastCleanUp() time.Time {
@@ -238,8 +237,8 @@ func (mc *MouseClickSystem) MouseButtonEvent(x, y, button int, up bool) {
 			transform, ok := transformComp.(*Transform)
 			mbox, ok2 := mboxComp.(*MouseBox)
 			position := transform.Position
-			position.X -= vect.Float(mbox.W / 2)
-			position.Y -= vect.Float(mbox.H / 2)
+			position.X -= float64(mbox.W / 2)
+			position.Y -= float64(mbox.H / 2)
 			if ok && ok2 {
 				if x > int(position.X) && x < int(position.X)+mbox.W &&
 					y > int(position.Y) && y < int(position.Y)+mbox.H {
@@ -287,8 +286,8 @@ func (mh *MouseHoverSystem) MouseMove(x, y int) {
 			transform, ok := transformComp.(*Transform)
 			mbox, ok2 := mboxComp.(*MouseBox)
 			position := transform.Position
-			position.X -= vect.Float(mbox.W / 2)
-			position.Y -= vect.Float(mbox.H / 2)
+			position.X -= float64(mbox.W / 2)
+			position.Y -= float64(mbox.H / 2)
 			if ok && ok2 {
 				if x > int(position.X) && x < int(position.X)+mbox.W &&
 					y > int(position.Y) && y < int(position.Y)+mbox.H {
